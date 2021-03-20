@@ -1,0 +1,96 @@
+org: devingen
+app: devingen-io
+service: sepet-api
+
+frameworkVersion: '>=1.28.0 <2.0.0'
+
+provider:
+  name: aws
+  runtime: go1.x
+  environment:
+    SEPET_S3_ACCESS_KEY_ID: ${param:S3_ACCESS_KEY_ID}
+    SEPET_S3_SECRET_ACCESS_KEY: ${param:S3_SECRET_ACCESS_KEY}
+    SEPET_S3_REGION: ${param:S3_REGION}
+    SEPET_MONGO_URI: ${param:MONGO_URI}
+    SEPET_MONGO_DATABASE: ${param:MONGO_DATABASE}
+    SEPET_S3_BUCKET: ${param:SEPET_S3_BUCKET}
+
+package:
+  exclude:
+    - ./**
+  include:
+    - ./bin/**
+
+functions:
+
+  get-buckets:
+    handler: bin/get-buckets
+    events:
+      - http:
+          path: /buckets
+          method: get
+          cors: true
+
+  create-bucket:
+    handler: bin/create-bucket
+    events:
+      - http:
+          path: /buckets
+          method: post
+          cors: true
+
+  get-bucket:
+    handler: bin/get-bucket
+    events:
+      - http:
+          path: /buckets/{id}
+          method: get
+          cors: true
+          request:
+            parameters:
+              paths:
+                id: true
+
+  update-bucket:
+    handler: bin/update-bucket
+    events:
+      - http:
+          path: /buckets/{id}
+          method: put
+          cors: true
+          request:
+            parameters:
+              paths:
+                id: true
+
+  delete-bucket:
+    handler: bin/delete-bucket
+    events:
+      - http:
+          path: /buckets/{id}
+          method: delete
+          cors: true
+          request:
+            parameters:
+              paths:
+                id: true
+
+  upload-file:
+    handler: bin/upload-file
+    events:
+      - http:
+          path: /{domain}
+          method: post
+          cors: true
+          request:
+            parameters:
+              paths:
+                domain: true
+
+  get-file-list-or-delete-file:
+    handler: bin/get-file-list-or-delete-file
+    events:
+      - http:
+          path: /{domain+}
+          method: any
+          cors: true
