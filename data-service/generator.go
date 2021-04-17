@@ -6,8 +6,8 @@ import (
 )
 
 // New generates new MongoDataService
-func New(databaseName string, database *database.Database) *mongo_data_service.MongoDataService {
-	return &mongo_data_service.MongoDataService{
+func New(databaseName string, database *database.Database) ISepetDataService {
+	return mongo_data_service.MongoDataService{
 		DatabaseName: databaseName,
 		Database:     database,
 	}

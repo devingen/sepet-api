@@ -38,15 +38,13 @@ func getDatabase(appConfig config.App) *database.Database {
 		var err error
 		db, err = database.New(appConfig.Mongo.URI)
 		if err != nil {
-			log.Fatalf("Database connection failed %s", err.Error())
+			log.Fatalf("Database connection failed when creating a new database %s", err.Error())
 		}
 	} else if !db.IsConnected() {
-		err := db.ConnectWithEnvironment()
+		err := db.ConnectWithURI(appConfig.Mongo.URI)
 		if err != nil {
-			log.Fatalf("Database connection failed %s", err.Error())
+			log.Fatalf("Database connection failed when connecting to an existing database %s", err.Error())
 		}
-	} else {
-		log.Println("Database connection exists")
 	}
 	return db
 }

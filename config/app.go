@@ -3,7 +3,7 @@ package config
 // App defines the environment variable configuration for the whole app
 type App struct {
 	// Port is the port of the HTTP server.
-	Port string `envconfig:"port" default:"1005"`
+	Port string `envconfig:"api_port" default:"1005"`
 
 	// CDNDomain is the domain to be used in the generated CDN url.
 	// The bucket domain will be added as sub domain and the CDN protocol will be prepended.

@@ -38,13 +38,13 @@ func (controller ServiceController) UpdateBucket(ctx context.Context, req core.R
 		return nil, 0, core.NewError(http.StatusNotFound, "bucket-not-found")
 	}
 
-	if body.Domain != "" {
+	if body.Domain != nil && *body.Domain != "" {
 		// check if another bucket has the same domain
-		existingBucketWithSameDomain, err := controller.DataService.FindBucketWithDomain(ctx, body.Domain)
+		existingBucketWithSameDomain, err := controller.DataService.FindBucketWithDomain(ctx, *body.Domain)
 		if err != nil {
 			return nil, 0, err
 		}
-		if existingBucketWithSameDomain != nil {
+		if existingBucketWithSameDomain != nil && id != existingBucketWithSameDomain.ID.Hex() {
 			return nil, 0, core.NewError(http.StatusConflict, "domain-is-already-being-used")
 		}
 		bucket.Domain = body.Domain
@@ -55,6 +55,8 @@ func (controller ServiceController) UpdateBucket(ctx context.Context, req core.R
 	bucket.IsCacheEnabled = body.IsCacheEnabled
 	bucket.IsVersioningEnabled = body.IsVersioningEnabled
 	bucket.Status = body.Status
+	bucket.Version = body.Version
+	bucket.VersionIdentifier = body.VersionIdentifier
 
 	updatedAt, revision, err := controller.DataService.UpdateBucket(ctx, bucket)
 	if err != nil {

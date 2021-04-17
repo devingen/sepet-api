@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	core "github.com/devingen/api-core"
 	"github.com/devingen/sepet-api/model"
 	"strings"
 )
@@ -13,7 +14,7 @@ import (
 func (s3Service S3Service) GetFileList(ctx context.Context, bucket *model.Bucket, bucketVersion, path string, fetchOnlyDirectChildren bool) ([]string, error) {
 
 	// all files under the folder
-	fileList, err := fetchFileList(s3Service, bucket.Folder, bucketVersion, path)
+	fileList, err := fetchFileList(s3Service, core.StringValue(bucket.Folder), bucketVersion, path)
 	if err != nil {
 		return nil, err
 	}

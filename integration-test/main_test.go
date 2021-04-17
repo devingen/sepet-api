@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	core "github.com/devingen/api-core"
 	"github.com/devingen/api-core/database"
 	"github.com/devingen/sepet-api/config"
 	mongo_data_service "github.com/devingen/sepet-api/data-service/mongo-data-service"
@@ -31,14 +32,14 @@ var appConfig = config.App{
 	Port:        "1005",
 	Mongo: config.Mongo{
 		URI:      "mongodb://localhost:27017",
-		Database: "sepet=api-integration-test",
+		Database: "sepet-api-integration-test",
 	},
 	S3: config.S3{
 		Endpoint:    "http://localhost:9000",
 		AccessKeyID: "AKIAIOSFODNN7EXAMPLE",
 		AccessKey:   "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 		Region:      "ca-central-1",
-		Bucket:      "sepet-dev",
+		Bucket:      "sepet-api-integration-test",
 	},
 }
 
@@ -66,15 +67,15 @@ func TestEntireFeatureSet(t *testing.T) {
 
 	// should create a bucket
 	bucketToCreate := model.Bucket{
-		Domain:              "dvncdn",
-		IndexPagePath:       "/index.html",
-		ErrorPagePath:       "/index.html",
-		IsCacheEnabled:      false,
-		IsVersioningEnabled: false,
+		Domain:              core.String("dvncdn"),
+		Region:              core.String("eu-central-1"),
+		IndexPagePath:       core.String("/index.html"),
+		ErrorPagePath:       core.String("/index.html"),
+		IsCacheEnabled:      core.Bool(false),
+		IsVersioningEnabled: core.Bool(false),
 	}
 	resp, createdBucket, err := createBucket(serverEndpoint, bucketToCreate)
 	assert.Nil(t, err)
-	assert.NotNil(t, createdBucket)
 	assert.Equal(t, http.StatusOK, resp.StatusCode(), "create bucket status not correct")
 
 	// should get the created bucket
@@ -97,11 +98,11 @@ func TestEntireFeatureSet(t *testing.T) {
 
 	// should update a bucket
 	bucketToUpdate := model.Bucket{
-		Domain:              "dvncdnupdated",
-		IndexPagePath:       "/index2.html",
-		ErrorPagePath:       "/index3.html",
-		IsCacheEnabled:      true,
-		IsVersioningEnabled: true,
+		Domain:              core.String("dvncdnupdated"),
+		IndexPagePath:       core.String("/index2.html"),
+		ErrorPagePath:       core.String("/index3.html"),
+		IsCacheEnabled:      core.Bool(true),
+		IsVersioningEnabled: core.Bool(true),
 	}
 	resp, updatedBucket, err := updateBucket(serverEndpoint, createdBucket.ID.Hex(), bucketToUpdate)
 	assert.Nil(t, err)
@@ -113,7 +114,7 @@ func TestEntireFeatureSet(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, retrievedBucketAfterUpdate)
 	assert.Equal(t, createdBucket.ID, retrievedBucketAfterUpdate.ID, "bucket IDs don't match")
-	assert.Equal(t, bucketToUpdate.Domain, retrievedBucketAfterUpdate.Domain, "bucket domains don't match")
+	assert.Equal(t, *bucketToUpdate.Domain, *retrievedBucketAfterUpdate.Domain, "bucket domains don't match")
 	assert.Equal(t, bucketToUpdate.IndexPagePath, retrievedBucketAfterUpdate.IndexPagePath, "bucket domains don't match")
 	assert.Equal(t, bucketToUpdate.ErrorPagePath, retrievedBucketAfterUpdate.ErrorPagePath, "bucket error page don't match")
 	assert.Equal(t, bucketToUpdate.IsCacheEnabled, retrievedBucketAfterUpdate.IsCacheEnabled, "bucket cache don't match")
@@ -121,18 +122,18 @@ func TestEntireFeatureSet(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode(), "get bucket status not correct")
 
 	// shouldn return empty file list
-	resp, fileList, err := getFileList(serverEndpoint, retrievedBucketAfterUpdate.Domain, "")
+	resp, fileList, err := getFileList(serverEndpoint, *retrievedBucketAfterUpdate.Domain, "")
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode(), "get file list status not correct")
 	assert.Equal(t, &dto.GetFileListResponse{
-		Files: []string{},
+		Results: []string{},
 	}, fileList, "file list is not correct")
 
 	// should fail to create empty folder if the path doesn't end with /
 	files := map[string]string{
 		"empty-folder": "",
 	}
-	resp, _, err = uploadFile(serverEndpoint, retrievedBucketAfterUpdate.Domain, files)
+	resp, _, err = uploadFile(serverEndpoint, *retrievedBucketAfterUpdate.Domain, files)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode(), "create folder status not correct")
 
@@ -140,20 +141,20 @@ func TestEntireFeatureSet(t *testing.T) {
 	files = map[string]string{
 		"empty-folder/": "",
 	}
-	resp, createFolderResponse, err := uploadFile(serverEndpoint, retrievedBucketAfterUpdate.Domain, files)
+	resp, createFolderResponse, err := uploadFile(serverEndpoint, *retrievedBucketAfterUpdate.Domain, files)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode(), "create folder status not correct")
 	assert.Equal(t, &dto.UploadFileResponse{
-		Locations: []string{"https://" + retrievedBucketAfterUpdate.Domain + ".sepet.devingen.io/empty-folder/"},
+		Locations: []string{"https://" + *retrievedBucketAfterUpdate.Domain + ".sepet.devingen.io/empty-folder/"},
 	}, createFolderResponse, "create empty folder file response not correct")
 
 	// should return empty folder in the file list after creating folder
-	resp, fileList, err = getFileList(serverEndpoint, retrievedBucketAfterUpdate.Domain, "")
+	resp, fileList, err = getFileList(serverEndpoint, *retrievedBucketAfterUpdate.Domain, "")
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode(), "get file list status not correct")
 	assert.Equal(t, []string{
 		"empty-folder/",
-	}, fileList.Files, "file list is not correct")
+	}, fileList.Results, "file list is not correct")
 
 	// should upload file
 	files = map[string]string{
@@ -161,67 +162,67 @@ func TestEntireFeatureSet(t *testing.T) {
 		"images/tr/Eskisehir.png": "files/Eskisehir.png",
 		"images/gb/London.png":    "files/London.png",
 	}
-	resp, uploadResp, err := uploadFile(serverEndpoint, retrievedBucketAfterUpdate.Domain, files)
+	resp, uploadResp, err := uploadFile(serverEndpoint, *retrievedBucketAfterUpdate.Domain, files)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode(), "upload file status not correct")
 	assert.ElementsMatch(t, []string{
-		"https://" + retrievedBucketAfterUpdate.Domain + ".sepet.devingen.io/images/tr/Marmaris.png",
-		"https://" + retrievedBucketAfterUpdate.Domain + ".sepet.devingen.io/images/tr/Eskisehir.png",
-		"https://" + retrievedBucketAfterUpdate.Domain + ".sepet.devingen.io/images/gb/London.png",
+		"https://" + *retrievedBucketAfterUpdate.Domain + ".sepet.devingen.io/images/tr/Marmaris.png",
+		"https://" + *retrievedBucketAfterUpdate.Domain + ".sepet.devingen.io/images/tr/Eskisehir.png",
+		"https://" + *retrievedBucketAfterUpdate.Domain + ".sepet.devingen.io/images/gb/London.png",
 	}, uploadResp.Locations, "upload file response not correct")
 
 	// should return the folder of the new file in the root file list after uploading file
-	resp, fileList, err = getFileList(serverEndpoint, retrievedBucketAfterUpdate.Domain, "")
+	resp, fileList, err = getFileList(serverEndpoint, *retrievedBucketAfterUpdate.Domain, "")
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode(), "get file list status not correct")
 	assert.ElementsMatch(t, []string{
 		"empty-folder/",
 		"images/",
-	}, fileList.Files, "file list is not correct")
+	}, fileList.Results, "file list is not correct")
 
 	// should return the file of the sub folder
-	resp, fileList, err = getFileList(serverEndpoint, retrievedBucketAfterUpdate.Domain, "images")
+	resp, fileList, err = getFileList(serverEndpoint, *retrievedBucketAfterUpdate.Domain, "images")
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode(), "get file list status not correct")
 	assert.ElementsMatch(t, []string{
 		"gb/",
 		"tr/",
-	}, fileList.Files, "file list is not correct")
+	}, fileList.Results, "file list is not correct")
 
 	// should return the file of the sub sub folder
-	resp, fileList, err = getFileList(serverEndpoint, retrievedBucketAfterUpdate.Domain, "images/tr")
+	resp, fileList, err = getFileList(serverEndpoint, *retrievedBucketAfterUpdate.Domain, "images/tr")
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode(), "get file list status not correct")
 	assert.ElementsMatch(t, []string{
 		"Marmaris.png",
 		"Eskisehir.png",
-	}, fileList.Files, "file list is not correct")
+	}, fileList.Results, "file list is not correct")
 
 	// should delete file
-	resp, err = deleteFile(serverEndpoint, retrievedBucketAfterUpdate.Domain, "images/tr/Marmaris.png")
+	resp, err = deleteFile(serverEndpoint, *retrievedBucketAfterUpdate.Domain, "images/tr/Marmaris.png")
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusNoContent, resp.StatusCode(), "delete file status not correct")
 
 	// should return correct file list after deleting the file
-	resp, fileList, err = getFileList(serverEndpoint, retrievedBucketAfterUpdate.Domain, "images/tr")
+	resp, fileList, err = getFileList(serverEndpoint, *retrievedBucketAfterUpdate.Domain, "images/tr")
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode(), "get file list status not correct")
 	assert.ElementsMatch(t, []string{
 		"Eskisehir.png",
-	}, fileList.Files, "file list is not correct")
+	}, fileList.Results, "file list is not correct")
 
 	// should delete the entire folder
-	resp, err = deleteFile(serverEndpoint, retrievedBucketAfterUpdate.Domain, "images/")
+	resp, err = deleteFile(serverEndpoint, *retrievedBucketAfterUpdate.Domain, "images/")
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusNoContent, resp.StatusCode(), "delete file status not correct")
 
 	// should return correct file list after deleting the entire folder
-	resp, fileList, err = getFileList(serverEndpoint, retrievedBucketAfterUpdate.Domain, "")
+	resp, fileList, err = getFileList(serverEndpoint, *retrievedBucketAfterUpdate.Domain, "")
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode(), "get file list status not correct")
 	assert.ElementsMatch(t, []string{
 		"empty-folder/",
-	}, fileList.Files, "file list is not correct")
+	}, fileList.Results, "file list is not correct")
 
 	// should delete bucket
 	resp, err = deleteBucket(serverEndpoint, retrievedBucketAfterUpdate.ID.Hex())
@@ -229,7 +230,7 @@ func TestEntireFeatureSet(t *testing.T) {
 	assert.Equal(t, http.StatusNoContent, resp.StatusCode(), "delete bucket status not correct")
 
 	// should fail to get file list after deleting bucket
-	resp, _, err = getFileList(serverEndpoint, retrievedBucketAfterUpdate.Domain, "")
+	resp, _, err = getFileList(serverEndpoint, *retrievedBucketAfterUpdate.Domain, "")
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode(), "get file list status not correct")
 
@@ -344,12 +345,12 @@ func getBucket(host, id string) (*resty.Response, *model.Bucket, error) {
 	return resp, &bucket, err
 }
 
-func getBuckets(host string) (*resty.Response, []model.Bucket, error) {
-	var buckets []model.Bucket
+func getBuckets(host string) (*resty.Response, []*model.Bucket, error) {
+	var data dto.GetBucketListResponse
 	resp, err := restyClient.R().
-		SetResult(&buckets).
+		SetResult(&data).
 		Get(host + "/buckets")
-	return resp, buckets, err
+	return resp, data.Results, err
 }
 
 func createBucket(host string, bucket model.Bucket) (*resty.Response, *model.Bucket, error) {

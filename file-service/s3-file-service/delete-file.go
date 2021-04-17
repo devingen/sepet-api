@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	core "github.com/devingen/api-core"
 	"github.com/devingen/sepet-api/model"
 )
 
@@ -25,7 +26,7 @@ func (s3Service S3Service) DeleteFile(ctx context.Context, bucket *model.Bucket,
 		for _, filePath := range files {
 			_, dfErr := s3Client.DeleteObject(&s3.DeleteObjectInput{
 				Bucket: aws.String(s3Service.Bucket),
-				Key:    aws.String(GetFilePath(bucket.Folder, bucketVersion, path+filePath)),
+				Key:    aws.String(GetFilePath(core.StringValue(bucket.Folder), bucketVersion, path+filePath)),
 			})
 			if dfErr != nil {
 				return dfErr
@@ -35,7 +36,7 @@ func (s3Service S3Service) DeleteFile(ctx context.Context, bucket *model.Bucket,
 
 	_, err := s3Client.DeleteObject(&s3.DeleteObjectInput{
 		Bucket: aws.String(s3Service.Bucket),
-		Key:    aws.String(GetFilePath(bucket.Folder, bucketVersion, path)),
+		Key:    aws.String(GetFilePath(core.StringValue(bucket.Folder), bucketVersion, path)),
 	})
 	return err
 }

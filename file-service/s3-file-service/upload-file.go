@@ -48,13 +48,13 @@ func (s3Service S3Service) UploadFile(ctx context.Context, bucket *model.Bucket,
 
 		_, err := uploader.Upload(&s3manager.UploadInput{
 			Bucket: aws.String(s3Service.Bucket),
-			Key:    aws.String(GetFilePath(bucket.Folder, bucketVersion, fileKey)),
+			Key:    aws.String(GetFilePath(core.StringValue(bucket.Folder), bucketVersion, fileKey)),
 			Body:   body,
 		})
 		if err != nil && err.(awserr.RequestFailure).StatusCode() != 409 {
 			return nil, err
 		}
-		locations = append(locations, GenerateSepetCDNURL(s3Service.CDNDomain, s3Service.CDNProtocol, bucket.Domain, fileKey))
+		locations = append(locations, GenerateSepetCDNURL(s3Service.CDNDomain, s3Service.CDNProtocol, core.StringValue(bucket.Domain), fileKey))
 	}
 	return locations, nil
 }

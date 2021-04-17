@@ -26,7 +26,7 @@ func (controller ServiceController) CreateBucket(ctx context.Context, req core.R
 	}
 
 	// check if another bucket has the same domain
-	existingBucketWithSameDomain, err := controller.DataService.FindBucketWithDomain(ctx, body.Domain)
+	existingBucketWithSameDomain, err := controller.DataService.FindBucketWithDomain(ctx, *body.Domain)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -53,13 +53,14 @@ func (controller ServiceController) CreateBucket(ctx context.Context, req core.R
 
 	bucket := &model.Bucket{
 		Domain:              body.Domain,
-		Folder:              folder,
-		Version:             "default",
+		Folder:              core.String(folder),
+		Version:             core.String("default"),
+		VersionIdentifier:   core.String("header"),
 		IndexPagePath:       body.IndexPagePath,
 		ErrorPagePath:       body.ErrorPagePath,
 		IsCacheEnabled:      body.IsCacheEnabled,
 		IsVersioningEnabled: body.IsVersioningEnabled,
-		Status:              model.BucketStatusActive,
+		Status:              core.String(string(model.BucketStatusActive)),
 	}
 
 	bucket, err = controller.DataService.CreateBucket(ctx, bucket)

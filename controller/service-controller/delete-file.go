@@ -36,13 +36,13 @@ func (controller ServiceController) DeleteFile(ctx context.Context, req core.Req
 	bucketVersion := bucket.Version
 	versionFromHeader, headerHasVersion := req.GetHeader("Bucket-Version")
 	if headerHasVersion {
-		if !bucket.IsVersioningEnabled {
+		if !core.BoolValue(bucket.IsVersioningEnabled) {
 			return nil, 0, core.NewError(http.StatusBadRequest, "versioning-not-enabled")
 		}
-		bucketVersion = versionFromHeader
+		bucketVersion = core.String(versionFromHeader)
 	}
 
-	err = controller.FileService.DeleteFile(ctx, bucket, bucketVersion, path)
+	err = controller.FileService.DeleteFile(ctx, bucket, *bucketVersion, path)
 	if err != nil {
 		return nil, 0, err
 	}

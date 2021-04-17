@@ -30,13 +30,13 @@ func (controller ServiceController) GetFileList(ctx context.Context, req core.Re
 	bucketVersion := bucket.Version
 	versionFromHeader, headerHasVersion := req.GetHeader("Bucket-Version")
 	if headerHasVersion {
-		if !bucket.IsVersioningEnabled {
+		if !core.BoolValue(bucket.IsVersioningEnabled) {
 			return nil, 0, core.NewError(http.StatusBadRequest, "versioning-not-enabled")
 		}
-		bucketVersion = versionFromHeader
+		bucketVersion = core.String(versionFromHeader)
 	}
 
-	fileList, err := controller.FileService.GetFileList(ctx, bucket, bucketVersion, path, true)
+	fileList, err := controller.FileService.GetFileList(ctx, bucket, *bucketVersion, path, true)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -45,7 +45,5 @@ func (controller ServiceController) GetFileList(ctx context.Context, req core.Re
 		"sepet-domain": bucket.Domain,
 	}).Debug("returning file list")
 
-	return &dto.GetFileListResponse{
-		Files: fileList,
-	}, http.StatusOK, nil
+	return &dto.GetFileListResponse{Results: fileList}, http.StatusOK, nil
 }

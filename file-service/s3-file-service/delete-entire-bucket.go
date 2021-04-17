@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	core "github.com/devingen/api-core"
 	"github.com/devingen/sepet-api/model"
 )
 
@@ -22,7 +23,7 @@ func (s3Service S3Service) DeleteEntireBucket(ctx context.Context, bucket *model
 	for _, filePath := range files {
 		_, dfErr := s3Client.DeleteObject(&s3.DeleteObjectInput{
 			Bucket: aws.String(s3Service.Bucket),
-			Key:    aws.String(bucket.Folder + "/" + filePath),
+			Key:    aws.String(core.StringValue(bucket.Folder) + "/" + filePath),
 		})
 		if dfErr != nil {
 			return dfErr
