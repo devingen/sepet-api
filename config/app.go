@@ -3,7 +3,7 @@ package config
 // App defines the environment variable configuration for the whole app
 type App struct {
 	// Port is the port of the HTTP server.
-	Port string `envconfig:"api_port" default:"1005"`
+	Port string `envconfig:"api_port" default:"8080"`
 
 	// CDNDomain is the domain to be used in the generated CDN url.
 	// The bucket domain will be added as sub domain and the CDN protocol will be prepended.
@@ -15,7 +15,7 @@ type App struct {
 	CDNProtocol string `envconfig:"cdn_protocol" default:"https"`
 
 	// LogLevel defines the log level.
-	LogLevel string `envconfig:"log_level" default:"info"`
+	LogLevel string `envconfig:"api_log_level" default:"info"`
 
 	// Mongo is the configuration of the MongoDB server.
 	Mongo Mongo `envconfig:"mongo"`

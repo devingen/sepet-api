@@ -7,8 +7,9 @@ go 1.12
 require (
 	github.com/aws/aws-lambda-go v1.16.0
 	github.com/aws/aws-sdk-go v1.0.0
-	github.com/devingen/api-core v0.0.21
+	github.com/devingen/api-core v0.0.22
 	github.com/go-ini/ini v1.62.0 // indirect
+	github.com/go-playground/validator/v10 v10.4.1
 	github.com/go-resty/resty/v2 v2.4.0
 	github.com/gorilla/mux v1.7.4
 	github.com/jmespath/go-jmespath v0.4.0 // indirect

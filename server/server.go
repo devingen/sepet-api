@@ -10,12 +10,18 @@ import (
 	"github.com/devingen/sepet-api/controller"
 	data_service "github.com/devingen/sepet-api/data-service"
 	file_service "github.com/devingen/sepet-api/file-service"
+	customvalidator "github.com/devingen/sepet-api/validator"
+	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 	"net/http"
 )
 
 // New creates a new HTTP server
 func New(appConfig config.App, db *database.Database) *http.Server {
+
+	validate := validator.New()
+	validate.RegisterValidation("bucket-domain", customvalidator.ValidateBucketDomain)
+	core.SetValidator(validate)
 
 	srv := &http.Server{Addr: ":" + appConfig.Port}
 
@@ -32,8 +38,8 @@ func New(appConfig config.App, db *database.Database) *http.Server {
 	router.HandleFunc("/buckets/{id}", wrap(serviceController.UpdateBucket)).Methods(http.MethodPut)
 	router.HandleFunc("/buckets/{id}", wrap(serviceController.DeleteBucket)).Methods(http.MethodDelete)
 	router.HandleFunc("/{domain}", wrap(serviceController.UploadFile)).Methods(http.MethodPost)
-	router.PathPrefix("/").Handler(http.HandlerFunc(wrap(serviceController.GetFileListOrDeleteFile))).Methods(http.MethodDelete)
-	router.PathPrefix("/").Handler(http.HandlerFunc(wrap(serviceController.GetFileListOrDeleteFile))).Methods(http.MethodGet)
+	router.PathPrefix("/").Handler(http.HandlerFunc(wrap(serviceController.DeleteFile))).Methods(http.MethodDelete)
+	router.PathPrefix("/").Handler(http.HandlerFunc(wrap(serviceController.GetFileList))).Methods(http.MethodGet)
 
 	http.Handle("/", &server.CORSRouterDecorator{R: router})
 	return srv
@@ -44,7 +50,7 @@ func generateWrapper(appConfig config.App) func(f core.Controller) func(http.Res
 		ctx := context.Background()
 
 		// add logger
-		withLogger := wrapper.WithLogger("error", f)
+		withLogger := wrapper.WithLogger(appConfig.LogLevel, f)
 
 		// convert to HTTP handler
 		handler := wrapper.WithHTTPHandler(ctx, withLogger)

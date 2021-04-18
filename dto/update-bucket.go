@@ -2,7 +2,7 @@ package dto
 
 // UpdateBucketRequest defines the request body structure of the update bucket request
 type UpdateBucketRequest struct {
-	Domain              *string `json:"domain,omitempty" validate:"omitempty,min=5,max=32,alphanum"`
+	Domain              *string `json:"domain,omitempty" validate:"omitempty,bucket-domain"`
 	Region              *string `json:"region,omitempty" validate:"omitempty,oneof='eu-central-1'"`
 	IndexPagePath       *string `json:"indexPagePath,omitempty"`
 	ErrorPagePath       *string `json:"errorPagePath,omitempty"`

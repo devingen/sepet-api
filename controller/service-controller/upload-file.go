@@ -42,12 +42,12 @@ func (controller ServiceController) UploadFile(ctx context.Context, req core.Req
 		bucketVersion = core.String(versionFromHeader)
 	}
 
-	files, err := extractFiles(req)
+	files, fileHeaders, err := extractFiles(req)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	locations, err := controller.FileService.UploadFile(ctx, bucket, *bucketVersion, files)
+	locations, err := controller.FileService.UploadFile(ctx, bucket, *bucketVersion, files, fileHeaders)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -61,7 +61,7 @@ func (controller ServiceController) UploadFile(ctx context.Context, req core.Req
 	}, http.StatusOK, nil
 }
 
-func extractFiles(req core.Request) (map[string]multipart.File, error) {
+func extractFiles(req core.Request) (map[string]multipart.File, map[string]*multipart.FileHeader, error) {
 	// create http.Request with the request data to parse the multipart form data
 	headers := map[string][]string{}
 	for name, value := range req.Headers {
@@ -75,19 +75,21 @@ func extractFiles(req core.Request) (map[string]multipart.File, error) {
 
 	err := httpReq.ParseMultipartForm(32 << 20)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	files := map[string]multipart.File{}
+	fileHeaders := map[string]*multipart.FileHeader{}
 	for key := range httpReq.MultipartForm.Value {
 		files[key] = nil
 	}
 	for key := range httpReq.MultipartForm.File {
-		file, _, rfErr := httpReq.FormFile(key)
+		file, header, rfErr := httpReq.FormFile(key)
 		if rfErr != nil {
-			return nil, rfErr
+			return nil, nil, rfErr
 		}
 		files[key] = file
+		fileHeaders[key] = header
 	}
-	return files, nil
+	return files, fileHeaders, nil
 }

@@ -10,6 +10,6 @@ import (
 type ISepetService interface {
 	GetFileList(ctx context.Context, bucket *model.Bucket, bucketVersion, path string, fetchOnlyDirectChildren bool) ([]string, error)
 	DeleteFile(ctx context.Context, bucket *model.Bucket, bucketVersion, path string) error
-	UploadFile(ctx context.Context, bucket *model.Bucket, bucketVersion string, files map[string]multipart.File) ([]string, error)
+	UploadFile(ctx context.Context, bucket *model.Bucket, bucketVersion string, files map[string]multipart.File, fileHeaders map[string]*multipart.FileHeader) ([]string, error)
 	DeleteEntireBucket(ctx context.Context, bucket *model.Bucket) error
 }

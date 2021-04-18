@@ -2,7 +2,7 @@ package dto
 
 // CreateBucketRequest defines the request body structure of the create bucket request
 type CreateBucketRequest struct {
-	Domain              *string `json:"domain,omitempty" validate:"min=5,max=32,alphanum"`
+	Domain              *string `json:"domain,omitempty" validate:"bucket-domain"`
 	Region              *string `json:"region,omitempty" validate:"oneof='eu-central-1'"`
 	IndexPagePath       *string `json:"indexPagePath,omitempty"`
 	ErrorPagePath       *string `json:"errorPagePath,omitempty"`

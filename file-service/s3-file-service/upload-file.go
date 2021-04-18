@@ -16,7 +16,7 @@ import (
 )
 
 // UploadFile implements ISepetService interface
-func (s3Service S3Service) UploadFile(ctx context.Context, bucket *model.Bucket, bucketVersion string, files map[string]multipart.File) ([]string, error) {
+func (s3Service S3Service) UploadFile(ctx context.Context, bucket *model.Bucket, bucketVersion string, files map[string]multipart.File, fileHeaders map[string]*multipart.FileHeader) ([]string, error) {
 
 	logger, err := log.Of(ctx)
 	if err != nil {
@@ -28,6 +28,8 @@ func (s3Service S3Service) UploadFile(ctx context.Context, bucket *model.Bucket,
 
 	locations := make([]string, 0)
 	for fileKey, file := range files {
+		fileHeader := fileHeaders[fileKey]
+
 		var body io.Reader = file
 		if file == nil {
 			// the inputs without files are empty folders to be created
@@ -44,6 +46,11 @@ func (s3Service S3Service) UploadFile(ctx context.Context, bucket *model.Bucket,
 					logger.Error(err)
 				}
 			}()
+
+			if fileHeader.Size == 0 {
+				// create empty content for empty file otherwise AWS will return error
+				body = strings.NewReader(" ")
+			}
 		}
 
 		_, err := uploader.Upload(&s3manager.UploadInput{
