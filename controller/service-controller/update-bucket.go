@@ -57,6 +57,7 @@ func (controller ServiceController) UpdateBucket(ctx context.Context, req core.R
 	bucket.Status = body.Status
 	bucket.Version = body.Version
 	bucket.VersionIdentifier = body.VersionIdentifier
+	bucket.CORSConfigs = body.CORSConfigs
 
 	updatedAt, revision, err := controller.DataService.UpdateBucket(ctx, bucket)
 	if err != nil {
