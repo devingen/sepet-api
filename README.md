@@ -37,6 +37,6 @@ docker run \
 
 ### Releasing new Docker image
 ```
-docker build -t devingen/sepet-api:0.0.4 .
-docker push devingen/sepet-api:0.0.4
+docker build -t devingen/sepet-api:0.0.5 .
+docker push devingen/sepet-api:0.0.5
 ```
