@@ -10,6 +10,7 @@ import (
 	"github.com/devingen/sepet-api/controller"
 	data_service "github.com/devingen/sepet-api/data-service"
 	file_service "github.com/devingen/sepet-api/file-service"
+	webhookis "github.com/devingen/sepet-api/interceptor-service/webhook-interceptor-service"
 	customvalidator "github.com/devingen/sepet-api/validator"
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
@@ -27,7 +28,8 @@ func New(appConfig config.App, db *database.Database) *http.Server {
 
 	dataService := data_service.New(appConfig.Mongo.Database, db)
 	s3Service := file_service.New(appConfig.S3, appConfig.CDNDomain, appConfig.CDNProtocol)
-	serviceController := controller.New(dataService, s3Service)
+	interceptorService := webhookis.New(appConfig.Webhook.URL, appConfig.Webhook.Headers)
+	serviceController := controller.New(dataService, s3Service, interceptorService)
 
 	wrap := generateWrapper(appConfig)
 
@@ -35,13 +37,21 @@ func New(appConfig config.App, db *database.Database) *http.Server {
 	router.HandleFunc("/buckets", wrap(serviceController.GetBuckets)).Methods(http.MethodGet)
 	router.HandleFunc("/buckets", wrap(serviceController.CreateBucket)).Methods(http.MethodPost)
 	router.HandleFunc("/buckets/{id}", wrap(serviceController.GetBucket)).Methods(http.MethodGet)
+	router.HandleFunc("/buckets/{id}/versions", wrap(serviceController.GetBucketVersionList)).Methods(http.MethodGet)
 	router.HandleFunc("/buckets/{id}", wrap(serviceController.UpdateBucket)).Methods(http.MethodPut)
 	router.HandleFunc("/buckets/{id}", wrap(serviceController.DeleteBucket)).Methods(http.MethodDelete)
 	router.HandleFunc("/{domain}", wrap(serviceController.UploadFile)).Methods(http.MethodPost)
 	router.PathPrefix("/").Handler(http.HandlerFunc(wrap(serviceController.DeleteFile))).Methods(http.MethodDelete)
 	router.PathPrefix("/").Handler(http.HandlerFunc(wrap(serviceController.GetFileList))).Methods(http.MethodGet)
 
-	http.Handle("/", &server.CORSRouterDecorator{R: router})
+	http.Handle("/", &server.CORSRouterDecorator{
+		R: router,
+		Headers: map[string]string{
+			server.CORSAccessControlAllowHeaders: server.CORSAccessControlAllowHeadersDefaultValue + ",devingen-product-id",
+			server.CORSAccessControlAllowMethods: server.CORSAccessControlAllowMethodsDefaultValue,
+		},
+		AllowSenderOrigin: true,
+	})
 	return srv
 }
 

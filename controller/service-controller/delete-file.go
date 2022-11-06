@@ -9,11 +9,11 @@ import (
 )
 
 // DeleteFile implements IServiceController interface
-func (controller ServiceController) DeleteFile(ctx context.Context, req core.Request) (interface{}, int, error) {
+func (controller ServiceController) DeleteFile(ctx context.Context, req core.Request) (*core.Response, error) {
 
 	logger, err := log.Of(ctx)
 	if err != nil {
-		return nil, http.StatusInternalServerError, err
+		return nil, core.NewStatusError(http.StatusInternalServerError)
 	}
 
 	domain, path := GetDomainAndPath(req.Path, false)
@@ -27,29 +27,31 @@ func (controller ServiceController) DeleteFile(ctx context.Context, req core.Req
 
 	bucket, err := controller.DataService.FindBucketWithDomain(ctx, domain)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	if bucket == nil {
-		return nil, 0, core.NewError(http.StatusNotFound, "bucket-not-found")
+		return nil, core.NewError(http.StatusNotFound, "bucket-not-found")
 	}
 
 	bucketVersion := bucket.Version
-	versionFromHeader, headerHasVersion := req.GetHeader("Bucket-Version")
+	versionFromHeader, headerHasVersion := req.GetHeader("bucket-version")
 	if headerHasVersion {
 		if !core.BoolValue(bucket.IsVersioningEnabled) {
-			return nil, 0, core.NewError(http.StatusBadRequest, "versioning-not-enabled")
+			return nil, core.NewError(http.StatusBadRequest, "versioning-not-enabled")
 		}
 		bucketVersion = core.String(versionFromHeader)
 	}
 
 	err = controller.FileService.DeleteFile(ctx, bucket, *bucketVersion, path)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	logger.WithFields(logrus.Fields{
 		"sepet-domain": bucket.Domain,
 	}).Debug("deleted file")
 
-	return nil, http.StatusNoContent, nil
+	return &core.Response{
+		StatusCode: http.StatusNoContent,
+	}, nil
 }

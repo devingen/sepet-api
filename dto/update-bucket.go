@@ -14,4 +14,5 @@ type UpdateBucketRequest struct {
 	Version             *string             `json:"version,omitempty" validate:"omitempty,min=1"`
 	VersionIdentifier   *string             `json:"versionIdentifier,omitempty" validate:"omitempty,oneof='header' 'path'"`
 	CORSConfigs         *[]model.CORSConfig `json:"corsConfigs,omitempty" bson:"corsConfig,omitempty"`
+	ResponseHeaders     *map[string]string  `json:"responseHeaders,omitempty" bson:"responseHeaders,omitempty"`
 }

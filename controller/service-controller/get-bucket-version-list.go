@@ -7,36 +7,32 @@ import (
 	"github.com/devingen/sepet-api/dto"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"strings"
 )
 
-// GetFileList implements IServiceController interface
-func (controller ServiceController) GetFileList(ctx context.Context, req core.Request) (*core.Response, error) {
+// GetBucketVersionList implements IServiceController interface
+func (controller ServiceController) GetBucketVersionList(ctx context.Context, req core.Request) (*core.Response, error) {
 
 	logger, err := log.Of(ctx)
 	if err != nil {
 		return nil, core.NewStatusError(http.StatusInternalServerError)
 	}
 
-	domain, path := GetDomainAndPath(req.Path, true)
+	id, hasID := req.PathParameters["id"]
+	if !hasID {
+		return nil, core.NewError(http.StatusBadRequest, "id-missing")
+	}
 
-	bucket, err := controller.DataService.FindBucketWithDomain(ctx, domain)
+	bucket, err := controller.DataService.FindBucketWithID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
+
 	if bucket == nil {
 		return nil, core.NewError(http.StatusNotFound, "bucket-not-found")
 	}
 
-	bucketVersion := bucket.Version
-	versionFromHeader, headerHasVersion := req.GetHeader("bucket-version")
-	if headerHasVersion {
-		if !core.BoolValue(bucket.IsVersioningEnabled) {
-			return nil, core.NewError(http.StatusBadRequest, "versioning-not-enabled")
-		}
-		bucketVersion = core.String(versionFromHeader)
-	}
-
-	fileList, err := controller.FileService.GetFileList(ctx, bucket, *bucketVersion, path, true)
+	fileList, err := controller.FileService.GetFileList(ctx, bucket, "", "", true)
 	if err != nil {
 		return nil, err
 	}
@@ -44,6 +40,10 @@ func (controller ServiceController) GetFileList(ctx context.Context, req core.Re
 	logger.WithFields(logrus.Fields{
 		"sepet-domain": bucket.Domain,
 	}).Debug("returning file list")
+
+	for i := range fileList {
+		fileList[i] = strings.TrimSuffix(fileList[i], "/")
+	}
 
 	return &core.Response{
 		StatusCode: http.StatusOK,

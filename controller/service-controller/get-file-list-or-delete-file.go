@@ -9,7 +9,7 @@ import (
 )
 
 // GetFileListOrDeleteFile implements IServiceController interface
-func (controller ServiceController) GetFileListOrDeleteFile(ctx context.Context, req core.Request) (interface{}, int, error) {
+func (controller ServiceController) GetFileListOrDeleteFile(ctx context.Context, req core.Request) (*core.Response, error) {
 
 	if req.HTTPMethod == http.MethodGet {
 		return controller.GetFileList(ctx, req)
@@ -19,7 +19,7 @@ func (controller ServiceController) GetFileListOrDeleteFile(ctx context.Context,
 
 	logger, err := log.Of(ctx)
 	if err != nil {
-		return nil, http.StatusInternalServerError, err
+		return nil, core.NewStatusError(http.StatusInternalServerError)
 	}
 
 	logger.WithFields(logrus.Fields{
@@ -27,5 +27,5 @@ func (controller ServiceController) GetFileListOrDeleteFile(ctx context.Context,
 		"method": req.HTTPMethod,
 	}).Debug("couldn't find a controller for the method")
 
-	return nil, http.StatusInternalServerError, nil
+	return nil, core.NewStatusError(http.StatusInternalServerError)
 }

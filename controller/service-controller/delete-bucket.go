@@ -9,38 +9,50 @@ import (
 )
 
 // DeleteBucket implements IServiceController interface
-func (controller ServiceController) DeleteBucket(ctx context.Context, req core.Request) (interface{}, int, error) {
+func (controller ServiceController) DeleteBucket(ctx context.Context, req core.Request) (*core.Response, error) {
+
+	_, interceptorStatusCode, interceptorError := controller.InterceptorService.Pre(ctx, req)
+	if interceptorError != nil {
+		return &core.Response{
+			StatusCode: interceptorStatusCode,
+			Body:       interceptorError,
+		}, nil
+	}
 
 	logger, err := log.Of(ctx)
 	if err != nil {
-		return nil, http.StatusInternalServerError, err
+		return nil, core.NewStatusError(http.StatusInternalServerError)
 	}
 
 	id, hasID := req.PathParameters["id"]
 	if !hasID {
-		return nil, 0, core.NewError(http.StatusBadRequest, "id-missing")
+		return nil, core.NewError(http.StatusBadRequest, "id-missing")
 	}
 
 	bucket, err := controller.DataService.FindBucketWithID(ctx, id)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	if bucket == nil {
-		return nil, 0, core.NewError(http.StatusNotFound, "bucket-not-found")
+		return nil, core.NewError(http.StatusNotFound, "bucket-not-found")
 	}
 
 	err = controller.DataService.DeleteBucket(ctx, id)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	err = controller.FileService.DeleteEntireBucket(ctx, bucket)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	logger.WithFields(logrus.Fields{"bucket-id": id}).Debug("deleted bucket")
 
-	return nil, http.StatusNoContent, nil
+	controller.InterceptorService.Final(ctx, req, nil)
+
+	return &core.Response{
+		StatusCode: http.StatusNoContent,
+	}, nil
 }

@@ -12,26 +12,34 @@ import (
 )
 
 // CreateBucket implements IServiceController interface
-func (controller ServiceController) CreateBucket(ctx context.Context, req core.Request) (interface{}, int, error) {
+func (controller ServiceController) CreateBucket(ctx context.Context, req core.Request) (*core.Response, error) {
+
+	_, interceptorStatusCode, interceptorError := controller.InterceptorService.Pre(ctx, req)
+	if interceptorError != nil {
+		return &core.Response{
+			StatusCode: interceptorStatusCode,
+			Body:       interceptorError,
+		}, nil
+	}
 
 	logger, err := log.Of(ctx)
 	if err != nil {
-		return nil, http.StatusInternalServerError, err
+		return nil, core.NewStatusError(http.StatusInternalServerError)
 	}
 
 	var body dto.CreateBucketRequest
 	err = req.AssertBody(&body)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	// check if another bucket has the same domain
 	existingBucketWithSameDomain, err := controller.DataService.FindBucketWithDomain(ctx, *body.Domain)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	if existingBucketWithSameDomain != nil {
-		return nil, 0, core.NewError(http.StatusConflict, "domain-is-already-being-used")
+		return nil, core.NewError(http.StatusConflict, "domain-is-already-being-used")
 	}
 
 	// generate a folder name until found unique
@@ -40,7 +48,7 @@ func (controller ServiceController) CreateBucket(ctx context.Context, req core.R
 		// check if another bucket has the same folder
 		existingBucketWithSameFolder, err := controller.DataService.FindBucketWithFolder(ctx, folder)
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 		if existingBucketWithSameFolder == nil {
 			// break if there is no bucket with the folder name
@@ -60,12 +68,13 @@ func (controller ServiceController) CreateBucket(ctx context.Context, req core.R
 		ErrorPagePath:       body.ErrorPagePath,
 		IsCacheEnabled:      body.IsCacheEnabled,
 		IsVersioningEnabled: body.IsVersioningEnabled,
+		ResponseHeaders:     body.ResponseHeaders,
 		Status:              core.String(string(model.BucketStatusActive)),
 	}
 
 	bucket, err = controller.DataService.CreateBucket(ctx, bucket)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	logger.WithFields(logrus.Fields{
@@ -73,5 +82,10 @@ func (controller ServiceController) CreateBucket(ctx context.Context, req core.R
 		"bucket-domain": bucket.Domain,
 	}).Debug("created bucket")
 
-	return &bucket, http.StatusOK, err
+	controller.InterceptorService.Final(ctx, req, bucket)
+
+	return &core.Response{
+		StatusCode: http.StatusCreated,
+		Body:       bucket,
+	}, nil
 }

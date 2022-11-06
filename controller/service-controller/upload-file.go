@@ -13,58 +13,73 @@ import (
 )
 
 // UploadFile implements IServiceController interface
-func (controller ServiceController) UploadFile(ctx context.Context, req core.Request) (interface{}, int, error) {
+func (controller ServiceController) UploadFile(ctx context.Context, req core.Request) (*core.Response, error) {
+
+	_, interceptorStatusCode, interceptorError := controller.InterceptorService.Pre(ctx, req)
+	if interceptorError != nil {
+		return &core.Response{
+			StatusCode: interceptorStatusCode,
+			Body:       interceptorError,
+		}, nil
+	}
 
 	logger, err := log.Of(ctx)
 	if err != nil {
-		return nil, http.StatusInternalServerError, err
+		return nil, core.NewStatusError(http.StatusInternalServerError)
 	}
 
 	domain := req.PathParameters["domain"]
 	if domain == "" {
-		return "", http.StatusBadRequest, core.NewError(http.StatusBadRequest, "domain-missing")
+		return nil, core.NewError(http.StatusBadRequest, "domain-missing")
 	}
 
 	bucket, err := controller.DataService.FindBucketWithDomain(ctx, domain)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	if bucket == nil {
-		return nil, 0, core.NewError(http.StatusNotFound, "bucket-not-found")
+		return nil, core.NewError(http.StatusNotFound, "bucket-not-found")
 	}
 
 	bucketVersion := bucket.Version
-	versionFromHeader, headerHasVersion := req.GetHeader("Bucket-Version")
+	versionFromHeader, headerHasVersion := req.GetHeader("bucket-version")
 	if headerHasVersion {
 		if !core.BoolValue(bucket.IsVersioningEnabled) {
-			return nil, 0, core.NewError(http.StatusBadRequest, "versioning-not-enabled")
+			return nil, core.NewError(http.StatusBadRequest, "versioning-not-enabled")
 		}
 		bucketVersion = core.String(versionFromHeader)
 	}
 
 	files, fileHeaders, err := extractFiles(req)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	locations, err := controller.FileService.UploadFile(ctx, bucket, *bucketVersion, files, fileHeaders)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	logger.WithFields(logrus.Fields{
 		"sepet-domain": bucket.Domain,
 	}).Info("finished-uploading-file")
 
-	return &dto.UploadFileResponse{
-		Locations: locations,
-	}, http.StatusOK, nil
+	return &core.Response{
+		StatusCode: http.StatusOK,
+		Body: dto.UploadFileResponse{
+			Locations: locations,
+		},
+	}, nil
 }
 
 func extractFiles(req core.Request) (map[string]multipart.File, map[string]*multipart.FileHeader, error) {
 	// create http.Request with the request data to parse the multipart form data
 	headers := map[string][]string{}
 	for name, value := range req.Headers {
+		if name == "content-type" {
+			// ParseMultipartForm is very case sensitive for Content-Type header
+			headers["Content-Type"] = []string{value}
+		}
 		headers[name] = []string{value}
 	}
 

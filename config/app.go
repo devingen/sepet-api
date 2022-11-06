@@ -3,10 +3,10 @@ package config
 // App defines the environment variable configuration for the whole app
 type App struct {
 	// Port is the port of the HTTP server.
-	Port string `envconfig:"api_port" default:"8080"`
+	Port string `envconfig:"port" default:"8080"`
 
 	// CDNDomain is the domain to be used in the generated CDN url.
-	// The bucket domain will be added as sub domain and the CDN protocol will be prepended.
+	// The bucket domain will be added as sub domain and the CDN protocol will be prepended.∂
 	// Formula is CDN_PROTOCOL://BUCKET_DOMAIN.CDN_DOMAIN
 	// Result  is https://acme.sepet.devingen.io
 	CDNDomain string `envconfig:"cdn_domain" default:"sepet.devingen.io"`
@@ -15,13 +15,16 @@ type App struct {
 	CDNProtocol string `envconfig:"cdn_protocol" default:"https"`
 
 	// LogLevel defines the log level.
-	LogLevel string `envconfig:"api_log_level" default:"info"`
+	LogLevel string `envconfig:"log_level" default:"info"`
 
 	// Mongo is the configuration of the MongoDB server.
 	Mongo Mongo `envconfig:"mongo"`
 
 	// S3 is the configuration of the S3 server.
 	S3 S3 `envconfig:"s3"`
+
+	// Webhook is the configuration of the webhook server.
+	Webhook Webhook `envconfig:"webhook"`
 }
 
 // Mongo defines the environment variable configuration for MongoDB
@@ -50,4 +53,14 @@ type S3 struct {
 
 	// Bucket is the bucket to connect.
 	Bucket string `envconfig:"bucket" default:"sepet"`
+}
+
+// Webhook defines the environment variable configuration for webhook
+type Webhook struct {
+
+	// URL is called before/after every request.
+	URL string `envconfig:"url" default:""`
+
+	// URL is called before/after every request.
+	Headers string `envconfig:"headers" default:""`
 }

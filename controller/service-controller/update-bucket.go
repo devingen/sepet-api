@@ -11,41 +11,41 @@ import (
 )
 
 // UpdateBucket implements IServiceController interface
-func (controller ServiceController) UpdateBucket(ctx context.Context, req core.Request) (interface{}, int, error) {
+func (controller ServiceController) UpdateBucket(ctx context.Context, req core.Request) (*core.Response, error) {
 
 	logger, err := log.Of(ctx)
 	if err != nil {
-		return nil, http.StatusInternalServerError, err
+		return nil, core.NewStatusError(http.StatusInternalServerError)
 	}
 
 	id, hasID := req.PathParameters["id"]
 	if !hasID {
-		return nil, 0, core.NewError(http.StatusBadRequest, "id-missing")
+		return nil, core.NewError(http.StatusBadRequest, "id-missing")
 	}
 
 	var body dto.UpdateBucketRequest
 	err = req.AssertBody(&body)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	bucket, err := controller.DataService.FindBucketWithID(ctx, id)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	if bucket == nil {
-		return nil, 0, core.NewError(http.StatusNotFound, "bucket-not-found")
+		return nil, core.NewError(http.StatusNotFound, "bucket-not-found")
 	}
 
 	if body.Domain != nil && *body.Domain != "" {
 		// check if another bucket has the same domain
 		existingBucketWithSameDomain, err := controller.DataService.FindBucketWithDomain(ctx, *body.Domain)
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 		if existingBucketWithSameDomain != nil && id != existingBucketWithSameDomain.ID.Hex() {
-			return nil, 0, core.NewError(http.StatusConflict, "domain-is-already-being-used")
+			return nil, core.NewError(http.StatusConflict, "domain-is-already-being-used")
 		}
 		bucket.Domain = body.Domain
 	}
@@ -58,10 +58,11 @@ func (controller ServiceController) UpdateBucket(ctx context.Context, req core.R
 	bucket.Version = body.Version
 	bucket.VersionIdentifier = body.VersionIdentifier
 	bucket.CORSConfigs = body.CORSConfigs
+	bucket.ResponseHeaders = body.ResponseHeaders
 
 	updatedAt, revision, err := controller.DataService.UpdateBucket(ctx, bucket)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	logger.WithFields(logrus.Fields{
@@ -69,9 +70,12 @@ func (controller ServiceController) UpdateBucket(ctx context.Context, req core.R
 		"bucket-domain": bucket.Domain,
 	}).Debug("updated bucket")
 
-	return core_dto.UpdateEntryResponse{
-		ID:        id,
-		UpdatedAt: *updatedAt,
-		Revision:  revision,
-	}, http.StatusOK, nil
+	return &core.Response{
+		StatusCode: http.StatusOK,
+		Body: core_dto.UpdateEntryResponse{
+			ID:        id,
+			UpdatedAt: *updatedAt,
+			Revision:  revision,
+		},
+	}, nil
 }
