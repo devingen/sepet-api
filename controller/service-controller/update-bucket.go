@@ -13,6 +13,14 @@ import (
 // UpdateBucket implements IServiceController interface
 func (controller ServiceController) UpdateBucket(ctx context.Context, req core.Request) (*core.Response, error) {
 
+	_, interceptorStatusCode, interceptorError := controller.InterceptorService.Pre(ctx, req)
+	if interceptorError != nil {
+		return &core.Response{
+			StatusCode: interceptorStatusCode,
+			Body:       interceptorError,
+		}, nil
+	}
+
 	logger, err := log.Of(ctx)
 	if err != nil {
 		return nil, core.NewStatusError(http.StatusInternalServerError)
