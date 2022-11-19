@@ -36,7 +36,7 @@ func (controller ServiceController) DeleteFile(ctx context.Context, req core.Req
 	bucketVersion := bucket.Version
 	versionFromHeader, headerHasVersion := req.GetHeader("bucket-version")
 	if headerHasVersion {
-		if !core.BoolValue(bucket.IsVersioningEnabled) {
+		if !core.BoolValue(bucket.IsVersioningEnabled()) {
 			return nil, core.NewError(http.StatusBadRequest, "versioning-not-enabled")
 		}
 		bucketVersion = core.String(versionFromHeader)

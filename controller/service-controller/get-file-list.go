@@ -27,16 +27,19 @@ func (controller ServiceController) GetFileList(ctx context.Context, req core.Re
 		return nil, core.NewError(http.StatusNotFound, "bucket-not-found")
 	}
 
-	bucketVersion := bucket.Version
+	bucketVersion := ""
+	if *bucket.IsVersioningEnabled() {
+		bucketVersion = core.StringValue(bucket.Version)
+	}
 	versionFromHeader, headerHasVersion := req.GetHeader("bucket-version")
 	if headerHasVersion {
-		if !core.BoolValue(bucket.IsVersioningEnabled) {
+		if !core.BoolValue(bucket.IsVersioningEnabled()) {
 			return nil, core.NewError(http.StatusBadRequest, "versioning-not-enabled")
 		}
-		bucketVersion = core.String(versionFromHeader)
+		bucketVersion = versionFromHeader
 	}
 
-	fileList, err := controller.FileService.GetFileList(ctx, bucket, *bucketVersion, path, true)
+	fileList, err := controller.FileService.GetFileList(ctx, bucket, bucketVersion, path, true)
 	if err != nil {
 		return nil, err
 	}

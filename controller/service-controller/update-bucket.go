@@ -61,7 +61,6 @@ func (controller ServiceController) UpdateBucket(ctx context.Context, req core.R
 	bucket.IndexPagePath = body.IndexPagePath
 	bucket.ErrorPagePath = body.ErrorPagePath
 	bucket.IsCacheEnabled = body.IsCacheEnabled
-	bucket.IsVersioningEnabled = body.IsVersioningEnabled
 	bucket.Status = body.Status
 	bucket.Version = body.Version
 	bucket.VersionIdentifier = body.VersionIdentifier

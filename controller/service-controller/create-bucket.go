@@ -60,16 +60,15 @@ func (controller ServiceController) CreateBucket(ctx context.Context, req core.R
 	}
 
 	bucket := &model.Bucket{
-		Domain:              body.Domain,
-		Folder:              core.String(folder),
-		Version:             core.String("default"),
-		VersionIdentifier:   core.String("header"),
-		IndexPagePath:       body.IndexPagePath,
-		ErrorPagePath:       body.ErrorPagePath,
-		IsCacheEnabled:      body.IsCacheEnabled,
-		IsVersioningEnabled: body.IsVersioningEnabled,
-		ResponseHeaders:     body.ResponseHeaders,
-		Status:              core.String(string(model.BucketStatusActive)),
+		Domain:            body.Domain,
+		Folder:            core.String(folder),
+		Version:           core.String("default"),
+		VersionIdentifier: body.VersionIdentifier,
+		IndexPagePath:     body.IndexPagePath,
+		ErrorPagePath:     body.ErrorPagePath,
+		IsCacheEnabled:    body.IsCacheEnabled,
+		ResponseHeaders:   body.ResponseHeaders,
+		Status:            core.String(string(model.BucketStatusActive)),
 	}
 
 	bucket, err = controller.DataService.CreateBucket(ctx, bucket)

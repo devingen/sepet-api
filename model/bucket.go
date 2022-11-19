@@ -1,6 +1,7 @@
 package model
 
 import (
+	core "github.com/devingen/api-core"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 )
@@ -64,7 +65,7 @@ type Bucket struct {
 	IsCacheEnabled *bool `json:"isCacheEnabled,omitempty" bson:"isCacheEnabled,omitempty"`
 
 	// IsVersioningEnabled is used by API and CDN to allow requests with specific versions.
-	IsVersioningEnabled *bool `json:"isVersioningEnabled,omitempty" bson:"isVersioningEnabled,omitempty"`
+	//IsVersioningEnabled *bool `json:"isVersioningEnabled,omitempty" bson:"isVersioningEnabled,omitempty"`
 
 	// Status determines the bucket status. Should be one of 'active' ... (Not active status is not supported yet)
 	Status *string `json:"status,omitempty" bson:"status,omitempty"`
@@ -75,6 +76,11 @@ type Bucket struct {
 
 	// ResponseHeaders contains the headers returned to all get file responses from CDN.
 	ResponseHeaders *map[string]string `json:"responseHeaders,omitempty" bson:"responseHeaders,omitempty"`
+}
+
+// IsVersioningEnabled returns if the versioning for the Bucket is enabled
+func (b *Bucket) IsVersioningEnabled() *bool {
+	return core.Bool(core.StringValue(b.VersionIdentifier) == "header")
 }
 
 // AddCreationFields adds the necessary fields before inserting into database

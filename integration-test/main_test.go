@@ -67,12 +67,11 @@ func TestEntireFeatureSet(t *testing.T) {
 
 	// should create a bucket
 	bucketToCreate := model.Bucket{
-		Domain:              core.String("dvncdn"),
-		Region:              core.String("eu-central-1"),
-		IndexPagePath:       core.String("/index.html"),
-		ErrorPagePath:       core.String("/index.html"),
-		IsCacheEnabled:      core.Bool(false),
-		IsVersioningEnabled: core.Bool(false),
+		Domain:         core.String("dvncdn"),
+		Region:         core.String("eu-central-1"),
+		IndexPagePath:  core.String("/index.html"),
+		ErrorPagePath:  core.String("/index.html"),
+		IsCacheEnabled: core.Bool(false),
 	}
 	resp, createdBucket, err := createBucket(serverEndpoint, bucketToCreate)
 	assert.Nil(t, err)
@@ -87,7 +86,6 @@ func TestEntireFeatureSet(t *testing.T) {
 	assert.Equal(t, bucketToCreate.IndexPagePath, retrievedBucket.IndexPagePath, "bucket domains don't match")
 	assert.Equal(t, bucketToCreate.ErrorPagePath, retrievedBucket.ErrorPagePath, "bucket error page don't match")
 	assert.Equal(t, bucketToCreate.IsCacheEnabled, retrievedBucket.IsCacheEnabled, "bucket cache don't match")
-	assert.Equal(t, bucketToCreate.IsVersioningEnabled, retrievedBucket.IsVersioningEnabled, "bucket versioning don't match")
 	assert.Equal(t, http.StatusOK, resp.StatusCode(), "get bucket status not correct")
 
 	// get all buckets should contain one bucket
@@ -98,11 +96,10 @@ func TestEntireFeatureSet(t *testing.T) {
 
 	// should update a bucket
 	bucketToUpdate := model.Bucket{
-		Domain:              core.String("dvncdnupdated"),
-		IndexPagePath:       core.String("/index2.html"),
-		ErrorPagePath:       core.String("/index3.html"),
-		IsCacheEnabled:      core.Bool(true),
-		IsVersioningEnabled: core.Bool(true),
+		Domain:         core.String("dvncdnupdated"),
+		IndexPagePath:  core.String("/index2.html"),
+		ErrorPagePath:  core.String("/index3.html"),
+		IsCacheEnabled: core.Bool(true),
 	}
 	resp, updatedBucket, err := updateBucket(serverEndpoint, createdBucket.ID.Hex(), bucketToUpdate)
 	assert.Nil(t, err)
