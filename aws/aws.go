@@ -10,6 +10,7 @@ import (
 	service_controller "github.com/devingen/sepet-api/controller/service-controller"
 	data_service "github.com/devingen/sepet-api/data-service"
 	file_service "github.com/devingen/sepet-api/file-service"
+	webhookis "github.com/devingen/sepet-api/interceptor-service/webhook-interceptor-service"
 	"github.com/kelseyhightower/envconfig"
 	"log"
 )
@@ -19,14 +20,15 @@ var db *database.Database
 // InitDeps creates the dependencies for the AWS Lambda functions.
 func InitDeps() (*service_controller.ServiceController, func(f core.Controller) wrapper.AWSLambdaHandler) {
 	var appConfig config.App
-	err := envconfig.Process("sepet", &appConfig)
+	err := envconfig.Process("sepet_api", &appConfig)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
 	dataService := data_service.New(appConfig.Mongo.Database, getDatabase(appConfig))
 	s3Service := file_service.New(appConfig.S3, appConfig.CDNDomain, appConfig.CDNProtocol)
-	serviceController := controller.New(dataService, s3Service)
+	interceptorService := webhookis.New(appConfig.Webhook.URL, appConfig.Webhook.Headers)
+	serviceController := controller.New(dataService, s3Service, interceptorService)
 
 	wrap := generateWrapper(appConfig)
 

@@ -2,18 +2,20 @@ org: devingen
 app: devingen-io
 service: sepet-api
 
-frameworkVersion: '>=1.28.0 <2.0.0'
+frameworkVersion: '^3.1.1'
 
 provider:
   name: aws
   runtime: go1.x
   environment:
-    SEPET_S3_ACCESS_KEY_ID: ${param:S3_ACCESS_KEY_ID}
-    SEPET_S3_SECRET_ACCESS_KEY: ${param:S3_SECRET_ACCESS_KEY}
-    SEPET_S3_REGION: ${param:S3_REGION}
-    SEPET_MONGO_URI: ${param:MONGO_URI}
-    SEPET_MONGO_DATABASE: ${param:MONGO_DATABASE}
-    SEPET_S3_BUCKET: ${param:SEPET_S3_BUCKET}
+    SEPET_API_S3_ACCESS_KEY_ID: ${param:SEPET_API_S3_ACCESS_KEY_ID}
+    SEPET_API_S3_SECRET_ACCESS_KEY: ${param:SEPET_API_S3_SECRET_ACCESS_KEY}
+    SEPET_API_S3_REGION: ${param:SEPET_API_S3_REGION}
+    SEPET_API_MONGO_URI: ${param:SEPET_API_MONGO_URI}
+    SEPET_API_MONGO_DATABASE: ${param:SEPET_API_MONGO_DATABASE}
+    SEPET_API_S3_BUCKET: ${param:SEPET_API_S3_BUCKET}
+    SEPET_API_WEBHOOK_URL: ${param:SEPET_API_WEBHOOK_URL}
+    SEPET_API_WEBHOOK_HEADERS: ${param:SEPET_API_WEBHOOK_HEADERS}
 
 package:
   exclude:
@@ -29,7 +31,8 @@ functions:
       - http:
           path: /buckets
           method: get
-          cors: true
+          cors:
+            headers: "*"
 
   create-bucket:
     handler: bin/create-bucket
@@ -37,7 +40,8 @@ functions:
       - http:
           path: /buckets
           method: post
-          cors: true
+          cors:
+            headers: "*"
 
   get-bucket:
     handler: bin/get-bucket
@@ -45,7 +49,8 @@ functions:
       - http:
           path: /buckets/{id}
           method: get
-          cors: true
+          cors:
+            headers: "*"
           request:
             parameters:
               paths:
@@ -57,7 +62,8 @@ functions:
       - http:
           path: /buckets/{id}
           method: put
-          cors: true
+          cors:
+            headers: "*"
           request:
             parameters:
               paths:
@@ -69,7 +75,21 @@ functions:
       - http:
           path: /buckets/{id}
           method: delete
-          cors: true
+          cors:
+            headers: "*"
+          request:
+            parameters:
+              paths:
+                id: true
+
+  get-bucket-version-list:
+    handler: bin/get-bucket-version-list
+    events:
+      - http:
+          path: /buckets/{id}/versions
+          method: get
+          cors:
+            headers: "*"
           request:
             parameters:
               paths:
@@ -81,7 +101,8 @@ functions:
       - http:
           path: /{domain}
           method: post
-          cors: true
+          cors:
+            headers: "*"
           request:
             parameters:
               paths:
@@ -93,4 +114,5 @@ functions:
       - http:
           path: /{domain+}
           method: any
-          cors: true
+          cors:
+            headers: "*"

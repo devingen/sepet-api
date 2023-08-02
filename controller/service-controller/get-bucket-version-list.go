@@ -42,7 +42,7 @@ func (controller ServiceController) GetBucketVersionList(ctx context.Context, re
 	}).Debug("returning file list")
 
 	for i := range fileList {
-		fileList[i] = strings.TrimSuffix(fileList[i], "/")
+		fileList[i].Path = strings.TrimSuffix(fileList[i].Path, "/")
 	}
 
 	return &core.Response{

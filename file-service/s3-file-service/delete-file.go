@@ -23,10 +23,10 @@ func (s3Service S3Service) DeleteFile(ctx context.Context, bucket *model.Bucket,
 			return gfErr
 		}
 
-		for _, filePath := range files {
+		for _, file := range files {
 			_, dfErr := s3Client.DeleteObject(&s3.DeleteObjectInput{
 				Bucket: aws.String(s3Service.Bucket),
-				Key:    aws.String(GetFilePath(core.StringValue(bucket.Folder), bucketVersion, path+filePath)),
+				Key:    aws.String(GetFilePath(core.StringValue(bucket.Folder), bucketVersion, path+file.Path)),
 			})
 			if dfErr != nil {
 				return dfErr

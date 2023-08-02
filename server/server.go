@@ -47,7 +47,7 @@ func New(appConfig config.App, db *database.Database) *http.Server {
 	http.Handle("/", &server.CORSRouterDecorator{
 		R: router,
 		Headers: map[string]string{
-			server.CORSAccessControlAllowHeaders: server.CORSAccessControlAllowHeadersDefaultValue + ",devingen-product-id" + ",bucket-version",
+			server.CORSAccessControlAllowHeaders: server.CORSAccessControlAllowHeadersDefaultValue + ",devingen-product-id" + ",bucket-version" + ",api-key",
 			server.CORSAccessControlAllowMethods: server.CORSAccessControlAllowMethodsDefaultValue,
 		},
 		AllowSenderOrigin: true,

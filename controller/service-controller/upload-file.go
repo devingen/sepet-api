@@ -41,13 +41,13 @@ func (controller ServiceController) UploadFile(ctx context.Context, req core.Req
 		return nil, core.NewError(http.StatusNotFound, "bucket-not-found")
 	}
 
-	bucketVersion := bucket.Version
+	bucketVersion := ""
+	if *bucket.IsVersioningEnabled() {
+		bucketVersion = *bucket.Version
+	}
 	versionFromHeader, headerHasVersion := req.GetHeader("bucket-version")
 	if headerHasVersion {
-		if !core.BoolValue(bucket.IsVersioningEnabled()) {
-			return nil, core.NewError(http.StatusBadRequest, "versioning-not-enabled")
-		}
-		bucketVersion = core.String(versionFromHeader)
+		bucketVersion = versionFromHeader
 	}
 
 	files, fileHeaders, err := extractFiles(req)
@@ -55,7 +55,7 @@ func (controller ServiceController) UploadFile(ctx context.Context, req core.Req
 		return nil, err
 	}
 
-	locations, err := controller.FileService.UploadFile(ctx, bucket, *bucketVersion, files, fileHeaders)
+	locations, err := controller.FileService.UploadFile(ctx, bucket, bucketVersion, files, fileHeaders)
 	if err != nil {
 		return nil, err
 	}

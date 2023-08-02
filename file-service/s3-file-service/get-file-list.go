@@ -11,7 +11,7 @@ import (
 )
 
 // GetFileList implements ISepetService interface
-func (s3Service S3Service) GetFileList(ctx context.Context, bucket *model.Bucket, bucketVersion, path string, fetchOnlyDirectChildren bool) ([]string, error) {
+func (s3Service S3Service) GetFileList(ctx context.Context, bucket *model.Bucket, bucketVersion, path string, fetchOnlyDirectChildren bool) ([]model.File, error) {
 
 	// all files under the folder
 	fileList, err := fetchFileList(s3Service, core.StringValue(bucket.Folder), bucketVersion, path)
@@ -21,25 +21,28 @@ func (s3Service S3Service) GetFileList(ctx context.Context, bucket *model.Bucket
 
 	if fetchOnlyDirectChildren {
 		// filter the files to get only the direct children
-		return getContentsOfDirectory(fileList, ""), nil
+		return getContentsOfDirectory(fileList, path), nil
 	}
 	return fileList, nil
 }
 
-func fetchFileList(s3Service S3Service, bucketName, version, path string) ([]string, error) {
+func fetchFileList(s3Service S3Service, bucketName, version, path string) ([]model.File, error) {
 	sess := session.New(s3Service.Config)
 	s3Client := s3.New(sess, s3Service.Config)
 
 	prefix := bucketName
+	pathPrefix := bucketName
 	if version != "" {
 		prefix += "/" + version
+		pathPrefix += "/" + version
 	}
 	if path != "" {
 		prefix += "/" + path
 	}
-	prefixLength := len(prefix) + 1
+	//prefixLength := len(prefix) + 1
+	pathPrefixLength := len(pathPrefix) + 1
 
-	files := make([]string, 0)
+	files := make([]model.File, 0)
 	nextMarker := ""
 	for {
 		input := &s3.ListObjectsInput{
@@ -58,8 +61,16 @@ func fetchFileList(s3Service S3Service, bucketName, version, path string) ([]str
 		resultLength := len(result.Contents)
 
 		for i := 0; i < resultLength; i++ {
+
 			filePath := *result.Contents[i].Key
-			files = append(files, filePath[prefixLength:])
+			name := filePath[strings.LastIndex(filePath, "/")+1:]
+			path := filePath[pathPrefixLength:]
+			files = append(files, model.File{
+				Name:         name,
+				Path:         path,
+				Size:         *result.Contents[i].Size,
+				LastModified: *result.Contents[i].LastModified,
+			})
 		}
 
 		if !*result.IsTruncated {
@@ -78,32 +89,41 @@ func fetchFileList(s3Service S3Service, bucketName, version, path string) ([]str
 	return files, nil
 }
 
-func getContentsOfDirectory(files []string, path string) []string {
+func getContentsOfDirectory(files []model.File, path string) []model.File {
 	pathLength := len(path) + 1
-	contentsSet := make(map[string]bool)
+	contentsSet := make(map[string]model.File)
 	for _, file := range files {
-		filePath := file
+		namePath := file.Path
 		if path != "" {
-			// clear the path prefix if there is path
-			if index := strings.Index(filePath, path+"/"); index == 0 {
-				filePath = filePath[index+pathLength:]
+			// clear the prefix if there is path
+			if index := strings.Index(file.Path, path+"/"); index == 0 {
+				namePath = file.Path[index+pathLength:]
 			} else {
 				// skip the file if it doesn't match the prefix
 				continue
 			}
 		}
 
-		if index := strings.Index(filePath, "/"); index != -1 {
-			contentsSet[filePath[:index+1]] = true
-			//contentsSet[filePath] = true
+		if index := strings.Index(namePath, "/"); index != -1 {
+			// this is a file in one of the sub directories. clear the name and path to have the directory name only
+			subFilePath := path + "/" + namePath[:index]
+			if path == "" {
+				subFilePath = namePath[:index]
+			}
+			contentsSet[namePath[:index+1]] = model.File{
+				Name:         namePath[:index],
+				Path:         subFilePath,
+				Size:         file.Size,
+				LastModified: file.LastModified,
+			}
 		} else {
-			contentsSet[filePath] = true
+			contentsSet[namePath] = file
 		}
 	}
-	contents := make([]string, 0)
-	for i := range contentsSet {
-		if i != "" {
-			contents = append(contents, i)
+	contents := make([]model.File, 0)
+	for filePath, file := range contentsSet {
+		if filePath != "" {
+			contents = append(contents, file)
 		}
 	}
 	return contents

@@ -20,10 +20,10 @@ func (s3Service S3Service) DeleteEntireBucket(ctx context.Context, bucket *model
 		return gfErr
 	}
 
-	for _, filePath := range files {
+	for _, file := range files {
 		_, dfErr := s3Client.DeleteObject(&s3.DeleteObjectInput{
 			Bucket: aws.String(s3Service.Bucket),
-			Key:    aws.String(core.StringValue(bucket.Folder) + "/" + filePath),
+			Key:    aws.String(core.StringValue(bucket.Folder) + "/" + file.Path),
 		})
 		if dfErr != nil {
 			return dfErr
